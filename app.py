@@ -1,9 +1,8 @@
 import sys
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow, QSlider, QVBoxLayout, QWidget, QPushButton, QDialog, QLabel, QFormLayout, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QSlider, QVBoxLayout, QWidget, QPushButton, QLabel, QHBoxLayout
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QPainter, QColor, QFont
-import time
+from PyQt5.QtGui import QPainter, QColor
 
 class AnimatedWindow(QMainWindow):
     def __init__(self):
