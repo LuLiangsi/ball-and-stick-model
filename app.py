@@ -161,8 +161,6 @@ class AnimatedWindow(QMainWindow):
         self.theta_dot_list = []
 
 
-
-
     def update_position(self):
         if self.theta_dot < 0.00001 and self.theta_dot > -0.00001 and self.theta < 0.0001 and self.theta > -0.0001 and self.time_list[-1] > 1:
             self.theta_dot = 0
