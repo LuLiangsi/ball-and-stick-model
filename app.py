@@ -119,6 +119,13 @@ class AnimatedWindow(QMainWindow):
         self.combo.addItem('角速度-角度')
         self.combo.currentIndexChanged.connect(self.function_plot_chose)
 
+        self.combo_view = QComboBox(self)
+        self.combo_view.addItem('全局')
+        self.combo_view.addItem('细节')
+        self.combo_view.currentIndexChanged.connect(self.function_plot_chose)
+
+        self.view_nums = 300
+
 
         # 创建绘图区域
         self.function_plot = pg.PlotWidget()
@@ -138,9 +145,9 @@ class AnimatedWindow(QMainWindow):
         self.init_layout.addLayout(mu_set_layout)
         self.init_layout.addLayout(L_set_layout)
 
-        self.init_layout.addStretch(1)
 
         self.init_layout.addWidget(self.combo)
+        self.init_layout.addWidget(self.combo_view)
         self.init_layout.addWidget(self.function_plot)
 
         self.init_layout.addStretch(1)
@@ -162,7 +169,7 @@ class AnimatedWindow(QMainWindow):
 
 
     def update_position(self):
-        if self.time_list[-1] > 1 and (self.theta_dot < 0.0001 and self.theta_dot > -0.0001) and ((self.theta < 0.0001 and self.theta > -0.0001) or abs(self.theta_double_dot) < 0.00001):
+        if (self.time_list[-1] > 1 and (self.theta_dot < 0.0001 and self.theta_dot > -0.0001) and ((self.theta < 0.0001 and self.theta > -0.0001) or abs(self.theta_double_dot) < 0.00001)) or self.time_list[-1] > 60:
             self.toggle_animation()
             return
         self.theta_double_dot = -self.g / (self.L_real) * np.sin(self.theta) - self.mu * self.theta_dot
@@ -177,11 +184,20 @@ class AnimatedWindow(QMainWindow):
         # self.time_list = self.time_list[-300:]
         # self.theta_list = self.theta_list[-300:]
         if self.combo.currentText() == '角度-时间':
-            self.function_plot_data.setData(self.time_list, self.theta_list)
+            if self.combo_view.currentText() == '全局':
+                self.function_plot_data.setData(self.time_list, self.theta_list)
+            else:
+                self.function_plot_data.setData(self.time_list[-self.view_nums:], self.theta_list[-self.view_nums:])
         elif self.combo.currentText() == '角速度-时间':
-            self.function_plot_data.setData(self.time_list, self.theta_dot_list)
+            if self.combo_view.currentText() == '全局':
+                self.function_plot_data.setData(self.time_list, self.theta_dot_list)
+            else:
+                self.function_plot_data.setData(self.time_list[-self.view_nums:], self.theta_dot_list[-self.view_nums:])
         elif self.combo.currentText() == '角速度-角度':
-            self.function_plot_data.setData(self.theta_list, self.theta_dot_list)
+            if self.combo_view.currentText() == '全局':
+                self.function_plot_data.setData(self.theta_list, self.theta_dot_list)
+            else:
+                self.function_plot_data.setData(self.theta_list[-self.view_nums:], self.theta_dot_list[-self.view_nums:])
 
         self.update()    
 
@@ -200,7 +216,8 @@ class AnimatedWindow(QMainWindow):
             self.timer.start(16)
             for slider in self.sliders:
                 slider.setEnabled(False)
-            self.combo.setEnabled(False)
+            # self.combo.setEnabled(False)
+            # self.combo_view.setEnabled(False)
             
             self.time_list.clear()
             self.theta_list.clear()
@@ -218,7 +235,8 @@ class AnimatedWindow(QMainWindow):
             self.timer.stop()
             for slider in self.sliders:
                 slider.setEnabled(True)
-            self.combo.setEnabled(True)
+            # self.combo.setEnabled(True)
+            # self.combo_view.setEnabled(True)
 
 
     def paintEvent(self, event):
@@ -244,11 +262,22 @@ class AnimatedWindow(QMainWindow):
     
     def function_plot_chose(self):
         if self.combo.currentText() == '角度-时间':
-            self.function_plot_data.setData(self.time_list, self.theta_list)
+            if self.combo_view.currentText() == '全局':
+                self.function_plot_data.setData(self.time_list, self.theta_list)
+            else:
+                self.function_plot_data.setData(self.time_list[-self.view_nums:], self.theta_list[-self.view_nums:])
         elif self.combo.currentText() == '角速度-时间':
-            self.function_plot_data.setData(self.time_list, self.theta_dot_list)
+            if self.combo_view.currentText() == '全局':
+                self.function_plot_data.setData(self.time_list, self.theta_dot_list)
+            else:
+                self.function_plot_data.setData(self.time_list[-self.view_nums:], self.theta_dot_list[-self.view_nums:])
         elif self.combo.currentText() == '角速度-角度':
-            self.function_plot_data.setData(self.theta_list, self.theta_dot_list)
+            if self.combo_view.currentText() == '全局':
+                self.function_plot_data.setData(self.theta_list, self.theta_dot_list)
+            else:
+                self.function_plot_data.setData(self.theta_list[-self.view_nums:], self.theta_dot_list[-self.view_nums:])
+
+        
         self.update()
 
 
