@@ -117,7 +117,7 @@ class AnimatedWindow(QMainWindow):
         self.combo.addItem('角度-时间')
         self.combo.addItem('角速度-时间')
         self.combo.addItem('角速度-角度')
-        # self.combo.currentIndexChanged.connect(self.function_plot_chose)
+        self.combo.currentIndexChanged.connect(self.function_plot_chose)
 
 
         # 创建绘图区域
@@ -162,12 +162,11 @@ class AnimatedWindow(QMainWindow):
 
 
     def update_position(self):
-        if self.theta_dot < 0.00001 and self.theta_dot > -0.00001 and self.theta < 0.0001 and self.theta > -0.0001 and self.time_list[-1] > 1:
-            self.theta_dot = 0
-            self.theta = 0
+        if self.time_list[-1] > 1 and (self.theta_dot < 0.0001 and self.theta_dot > -0.0001) and ((self.theta < 0.0001 and self.theta > -0.0001) or abs(self.theta_double_dot) < 0.00001):
             self.toggle_animation()
             return
-        self.theta_dot += (-self.g / (self.L_real) * np.sin(self.theta) - self.mu * self.theta_dot) * 0.016
+        self.theta_double_dot = -self.g / (self.L_real) * np.sin(self.theta) - self.mu * self.theta_dot
+        self.theta_dot += self.theta_double_dot * 0.016
         self.theta += self.theta_dot * 0.016
         if self.theta > np.pi:
             self.theta -= 2 * np.pi
@@ -195,6 +194,9 @@ class AnimatedWindow(QMainWindow):
             self.g = self.sliders[2].value() / 10
             self.mu = self.sliders[3].value() / 1000
             self.L_real = self.sliders[4].value() / 100
+
+            self.theta_double_dot = -self.g / (self.L_real) * np.sin(self.theta) - self.mu * self.theta_dot
+
             self.timer.start(16)
             for slider in self.sliders:
                 slider.setEnabled(False)
@@ -209,6 +211,10 @@ class AnimatedWindow(QMainWindow):
             self.theta_dot_list.append(self.theta_dot)
         else:
             self.begin_button.setText('开始')
+            self.theta_double_dot = 0
+            self.theta_dot = 0
+            self.theta = 0
+            self.update()
             self.timer.stop()
             for slider in self.sliders:
                 slider.setEnabled(True)
@@ -237,7 +243,13 @@ class AnimatedWindow(QMainWindow):
 
     
     def function_plot_chose(self):
-        pass
+        if self.combo.currentText() == '角度-时间':
+            self.function_plot_data.setData(self.time_list, self.theta_list)
+        elif self.combo.currentText() == '角速度-时间':
+            self.function_plot_data.setData(self.time_list, self.theta_dot_list)
+        elif self.combo.currentText() == '角速度-角度':
+            self.function_plot_data.setData(self.theta_list, self.theta_dot_list)
+        self.update()
 
 
 if __name__=='__main__':
