@@ -246,6 +246,8 @@ class AnimatedWindow(QMainWindow):
             self.function_plot.setLabel('left', '角速度')
             self.function_plot.setLabel('bottom', '角度')
 
+        self.function_plot_data.clear()
+
         self.update()
 
 
