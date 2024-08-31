@@ -1,8 +1,9 @@
 import sys
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow, QSlider, QVBoxLayout, QWidget, QPushButton, QLabel, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QSlider, QVBoxLayout, QWidget, QPushButton, QLabel, QHBoxLayout, QComboBox
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPainter, QColor
+import pyqtgraph as pg
 
 class AnimatedWindow(QMainWindow):
     def __init__(self):
@@ -11,8 +12,11 @@ class AnimatedWindow(QMainWindow):
     
     def initUI(self):
         
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 900, 600)
         self.setWindowTitle('杆球模拟')
+
+        # 设置窗口大小
+        self.setFixedSize(900, 600)
 
         # 设置动画参数
         self.center_x = 250
@@ -31,14 +35,6 @@ class AnimatedWindow(QMainWindow):
         self.begin_button = QPushButton('开始', self)
         self.begin_button.clicked.connect(self.toggle_animation)
 
-        # self.stop_button = QPushButton('停止', self)
-        # self.stop_button.clicked.connect(self.toggle_animation)
-        # self.reset_button = QPushButton('重置', self)
-        # self.reset_button.clicked.connect(self.toggle_animation)
-        # self.stop_and_reset_layout = QHBoxLayout()
-        # self.stop_and_reset_layout.addWidget(self.stop_button)
-        # self.stop_and_reset_layout.addWidget(self.reset_button)
-
         # # 初始值设置布局
         self.init_layout = QVBoxLayout()
         self.init_layout.addWidget(self.begin_button)
@@ -47,7 +43,7 @@ class AnimatedWindow(QMainWindow):
         lable_value_width = 70
 
         theta_set_layout = QHBoxLayout()
-        theta_lable = QLabel('角度:')
+        theta_lable = QLabel('初始角度:')
         theta_lable.setFixedWidth(lable_text_width)
         theta_value_label = QLabel('0°')
         theta_value_label.setFixedWidth(lable_value_width)
@@ -61,7 +57,7 @@ class AnimatedWindow(QMainWindow):
         theta_set_layout.addWidget(theta_slider)
         
         theta_dot_set_layout = QHBoxLayout()
-        theta_dot_lable = QLabel('角速度:')
+        theta_dot_lable = QLabel('初始角速度:')
         theta_dot_lable.setFixedWidth(lable_text_width)
         theta_dot_value_lable = QLabel('0 rad/s')
         theta_dot_value_lable.setFixedWidth(lable_value_width)
@@ -116,6 +112,23 @@ class AnimatedWindow(QMainWindow):
         L_set_layout.addWidget(L_value_label)
         L_set_layout.addWidget(L_slider)
 
+        # 创造选择
+        self.combo = QComboBox(self)
+        self.combo.addItem('角度-时间')
+        self.combo.addItem('角速度-时间')
+        self.combo.addItem('角速度-角度')
+        self.combo.currentIndexChanged.connect(self.function_plot_chose)
+
+
+        # 创建绘图区域
+        self.function_plot = pg.PlotWidget()
+        self.function_plot.showGrid(x=True, y=True)
+        self.function_plot.setFixedSize(400, 300)
+
+
+        # 初始化绘图数据
+        self.function_plot_data = self.function_plot.plot([0], [0])
+
 
         self.sliders = [theta_slider, theta_dot_slider, gravity_slider, mu_slider, L_slider]
 
@@ -127,6 +140,12 @@ class AnimatedWindow(QMainWindow):
 
         self.init_layout.addStretch(1)
 
+        self.init_layout.addWidget(self.combo)
+        self.init_layout.addWidget(self.function_plot)
+
+        self.init_layout.addStretch(1)
+
+
         # window layout
         self.window_layout = QHBoxLayout()
         self.window_layout.addStretch(1)
@@ -137,17 +156,38 @@ class AnimatedWindow(QMainWindow):
         self.setCentralWidget(self.set_widget)
         self.set_widget.show()
 
+        self.time_list = []
+        self.theta_list = []
+        self.theta_dot_list = []
+
+
+
 
     def update_position(self):
-        if self.theta_dot < 0.00001 and self.theta_dot > -0.00001 and self.theta < 0.0001 and self.theta > -0.0001:
+        if self.theta_dot < 0.00001 and self.theta_dot > -0.00001 and self.theta < 0.0001 and self.theta > -0.0001 and self.time_list[-1] > 1:
             self.theta_dot = 0
             self.theta = 0
+            self.toggle_animation()
+            return
         self.theta_dot += (-self.g / (self.L_real) * np.sin(self.theta) - self.mu * self.theta_dot) * 0.016
         self.theta += self.theta_dot * 0.016
         if self.theta > np.pi:
             self.theta -= 2 * np.pi
-        self.update()
-        
+
+        self.time_list.append(self.time_list[-1] + 0.016)
+        self.theta_list.append(self.theta)
+        self.theta_dot_list.append(self.theta_dot)
+        # self.time_list = self.time_list[-300:]
+        # self.theta_list = self.theta_list[-300:]
+        if self.combo.currentText() == '角度-时间':
+            self.function_plot_data.setData(self.time_list, self.theta_list)
+        elif self.combo.currentText() == '角速度-时间':
+            self.function_plot_data.setData(self.time_list, self.theta_dot_list)
+        elif self.combo.currentText() == '角速度-角度':
+            self.function_plot_data.setData(self.theta_list, self.theta_dot_list)
+
+        self.update()    
+
 
     def toggle_animation(self):
         if self.begin_button.text() == '开始':
@@ -160,14 +200,21 @@ class AnimatedWindow(QMainWindow):
             self.timer.start(16)
             for slider in self.sliders:
                 slider.setEnabled(False)
+            self.combo.setEnabled(False)
+            
+            self.time_list.clear()
+            self.theta_list.clear()
+            self.theta_dot_list.clear()
+
+            self.time_list.append(0)
+            self.theta_list.append(self.theta)
+            self.theta_dot_list.append(self.theta_dot)
         else:
             self.begin_button.setText('开始')
             self.timer.stop()
             for slider in self.sliders:
                 slider.setEnabled(True)
-
-
-
+            self.combo.setEnabled(True)
 
 
     def paintEvent(self, event):
@@ -178,6 +225,8 @@ class AnimatedWindow(QMainWindow):
         ball_x = self.center_x + self.L_animation * np.sin(self.theta)
         ball_y = self.center_y + self.L_animation * np.cos(self.theta)
 
+        ball_x = int(ball_x)
+        ball_y = int(ball_y)
         # 绘制小球
         painter.drawEllipse(ball_x - 15, ball_y - 15, 30, 30) 
 
@@ -187,11 +236,19 @@ class AnimatedWindow(QMainWindow):
         # 显示角度
         painter.drawText(20, 20, 'theta: {:.2f}°'.format(self.theta/np.pi*180))
 
-    def update_theta_text(self):
-        self.theta_text.setText(f'theta: {self.theta_slider.value()}°')
+    
+    def function_plot_chose(self):
+        if self.combo.currentText() == '角度-时间':
+            self.function_plot.setLabel('left', '角度')
+            self.function_plot.setLabel('bottom', '时间')
+        elif self.combo.currentText() == '角速度-时间':
+            self.function_plot.setLabel('left', '角速度')
+            self.function_plot.setLabel('bottom', '时间')
+        elif self.combo.currentText() == '角速度-角度':
+            self.function_plot.setLabel('left', '角速度')
+            self.function_plot.setLabel('bottom', '角度')
 
-    def update_theta_dot_text(self):
-        self.theta_dot_text.setText(f'theta_dot: {self.theta_dot_slider.value()}°')
+        self.update()
 
 
 if __name__=='__main__':
