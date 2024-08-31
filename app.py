@@ -117,7 +117,7 @@ class AnimatedWindow(QMainWindow):
         self.combo.addItem('角度-时间')
         self.combo.addItem('角速度-时间')
         self.combo.addItem('角速度-角度')
-        self.combo.currentIndexChanged.connect(self.function_plot_chose)
+        # self.combo.currentIndexChanged.connect(self.function_plot_chose)
 
 
         # 创建绘图区域
@@ -231,24 +231,13 @@ class AnimatedWindow(QMainWindow):
         # 画一条连接线
         painter.drawLine(self.center_x, self.center_y, ball_x, ball_y)
 
-        # 显示角度
+        # 显示角度和角速度
         painter.drawText(20, 20, 'theta: {:.2f}°'.format(self.theta/np.pi*180))
+        # painter.drawText(20, 40, 'theta_dot: {:.2f} rad/s'.format(self.theta_dot))
 
     
     def function_plot_chose(self):
-        if self.combo.currentText() == '角度-时间':
-            self.function_plot.setLabel('left', '角度')
-            self.function_plot.setLabel('bottom', '时间')
-        elif self.combo.currentText() == '角速度-时间':
-            self.function_plot.setLabel('left', '角速度')
-            self.function_plot.setLabel('bottom', '时间')
-        elif self.combo.currentText() == '角速度-角度':
-            self.function_plot.setLabel('left', '角速度')
-            self.function_plot.setLabel('bottom', '角度')
-
-        self.function_plot_data.clear()
-
-        self.update()
+        pass
 
 
 if __name__=='__main__':
